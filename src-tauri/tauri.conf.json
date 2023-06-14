@@ -36,9 +36,7 @@
     "updater": {
       "active": true,
       "endpoints": [
-        "https://github.com/shandowc/tauri-practise/releases/download/updater/update.json",
-        "https://hub.fgit.ml/shandowc/tauri-practise/releases/download/updater/update.json",
-        "https://ghproxy.com/https://github.com/shandowc/tauri-practise/releases/download/updater/update.json"
+        "https://github.com/shandowc/tauri-practise/releases/download/updater/update.json"
       ],
       "dialog": false,
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDIwRTdDNEJGMkE3RTlGOTYKUldTV24zNHF2OFRuSU5XcS9vNjh0SXJDaTlHVTM1TFFaRlM5L05IdUwzK3B4ZXVXWFNkZG5YTnoK"
