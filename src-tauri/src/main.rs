@@ -2,6 +2,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod command;
 mod utils;
+mod macros;
+mod models;
 
 use std::io::Write;
 use std::env;
@@ -26,8 +28,11 @@ fn main() {
         .manage(command::AppState(Default::default()))
         .invoke_handler(tauri::generate_handler![
             command::greet,
+            command::get_config,
+            command::set_config,
             command::load_root_dir,
             command::next_frame_info,
+            command::previous_frame_info,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
