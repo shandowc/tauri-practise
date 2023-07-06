@@ -39,9 +39,9 @@ pub fn read_frame_info(cfg: &Setting, timestamp: i64, timestamp_dir: &Path) -> O
     });
 
     let mut tracked_targets: HashMap<i64, Target> = HashMap::new();
-
     let mut detects: HashMap<Rect, Value> = HashMap::new();
     let mut tracks: HashMap<Rect, i64> = HashMap::new();
+    let mut jsons: HashMap<String, Vec<String>> = HashMap::new();
 
     for entry in dir_result.ok()? {
         let entry = skip_fail!(entry);
@@ -59,6 +59,13 @@ pub fn read_frame_info(cfg: &Setting, timestamp: i64, timestamp_dir: &Path) -> O
         // log::info!("{module}");
 
         let s = skip_fail!(fs::read_to_string(entry.path()));
+
+        if let Some(v) = jsons.get_mut(&module) {
+            v.push(s.clone());
+        } else {
+            jsons.insert(module.clone(), vec![s.clone()]);
+        }
+
         let json: Value = skip_fail!(serde_json::from_str(&s));
 
         let a = &json["roi"]["$binary"]["$readable"];
@@ -93,7 +100,7 @@ pub fn read_frame_info(cfg: &Setting, timestamp: i64, timestamp_dir: &Path) -> O
             Target {
                 track_id,
                 label: json["label"].as_i64().unwrap(),
-                roi: Some(roi),
+                roi,
                 selected: false,
                 annotations: overlay_strings,
             },
@@ -109,7 +116,7 @@ pub fn read_frame_info(cfg: &Setting, timestamp: i64, timestamp_dir: &Path) -> O
             targets.push(Target {
                 track_id: -1,
                 label: v["label"].as_i64().unwrap(),
-                roi: Some(roi),
+                roi,
                 selected: false,
                 annotations: overlay_strings,
             });
@@ -135,6 +142,7 @@ pub fn read_frame_info(cfg: &Setting, timestamp: i64, timestamp_dir: &Path) -> O
         timestamp,
         image_data: general_purpose::STANDARD_NO_PAD.encode(content),
         targets,
+        jsons,
     })
 }
 

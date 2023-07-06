@@ -1,5 +1,8 @@
 use serde::{Deserialize, Serialize};
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 use tauri::State;
 
 #[derive(Default)]
@@ -37,6 +40,7 @@ pub struct FrameInfo {
     pub timestamp: i64,
     pub image_data: String,
     pub targets: Vec<Target>,
+    pub jsons: HashMap<String, Vec<String>>
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -51,7 +55,7 @@ pub struct Rect {
 pub struct Target {
     pub track_id: i64,
     pub label: i64,
-    pub roi: Option<Rect>,
+    pub roi: Rect,
     pub selected: bool,
     pub annotations: Vec<String>,
 }

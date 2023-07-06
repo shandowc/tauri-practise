@@ -98,7 +98,7 @@ pub fn load_root_dir(app: AppArg<'_>, root_dir: &str) -> Result<(), Error> {
             }
         }
     }
-    app.current_index = -1;
+    app.current_index = 0;
     app.timestamps.sort();
     Ok(())
 }
@@ -135,5 +135,13 @@ pub fn previous_frame_info(app: AppArg<'_>) -> Option<FrameInfo> {
 
     let timestamp_dir = Path::new(&app.root_dir).join(format!("{curtimestamp}"));
 
+    return read_frame_info(app.config.as_ref().unwrap(), curtimestamp, &timestamp_dir);
+}
+
+#[tauri::command]
+pub fn current_frame_info(app: AppArg<'_>) -> Option<FrameInfo> {
+    let app = app.0.lock().unwrap();
+    let curtimestamp = *app.timestamps.get(app.current_index as usize)?;
+    let timestamp_dir = Path::new(&app.root_dir).join(format!("{curtimestamp}"));
     return read_frame_info(app.config.as_ref().unwrap(), curtimestamp, &timestamp_dir);
 }

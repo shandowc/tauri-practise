@@ -28,6 +28,7 @@ fn main() {
         .manage(models::AppState(Default::default()))
         .invoke_handler(tauri::generate_handler![
             command::validata_path,
+            command::current_frame_info,
             command::greet,
             command::get_config,
             command::set_config,
