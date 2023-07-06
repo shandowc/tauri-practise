@@ -1,3 +1,7 @@
+## v0.0.4
+
+universal macos app.
+
 ## v0.0.3
 
 first working.
