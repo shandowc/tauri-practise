@@ -25,8 +25,9 @@ fn main() {
         .init();
 
     tauri::Builder::default()
-        .manage(command::AppState(Default::default()))
+        .manage(models::AppState(Default::default()))
         .invoke_handler(tauri::generate_handler![
+            command::validata_path,
             command::greet,
             command::get_config,
             command::set_config,

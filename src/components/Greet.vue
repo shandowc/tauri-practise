@@ -15,6 +15,7 @@ async function greet() {
   // });
   // console.log(selected);
   greetMsg.value = await invoke("greet", { name: name.value });
+  await invoke("get_config");
   if (!loaded) {
     await invoke("load_root_dir", { rootDir: "/data/vps/10002023060605043241601/" })
     loaded = true;

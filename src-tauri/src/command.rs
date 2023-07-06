@@ -1,15 +1,9 @@
-use crate::utils::read_frame_info;
+use crate::models::{AppArg, FrameInfo, Setting};
 use crate::skip_fail;
+use crate::utils::read_frame_info;
 use std::fs;
 use std::path::Path;
-use std::sync::{Arc, Mutex};
-use tauri::State;
-use crate::models::{FrameInfo, App, Setting};
-
-#[derive(Default)]
-pub struct AppState(pub Arc<Mutex<App>>);
-
-pub type AppArg<'a> = State<'a, AppState>;
+use serde_json_path::JsonPath;
 
 #[tauri::command]
 pub fn greet(name: &str) -> String {
@@ -20,6 +14,8 @@ pub fn greet(name: &str) -> String {
 pub enum Error {
     #[error(transparent)]
     Io(#[from] std::io::Error),
+    #[error(transparent)]
+    ParseError(#[from] serde_json_path::ParseError),
 }
 
 impl serde::Serialize for Error {
@@ -31,16 +27,50 @@ impl serde::Serialize for Error {
     }
 }
 
-#[tauri::command]
-pub fn get_config(app: AppArg<'_>) -> Option<Setting> {
-    let app = app.0.lock().unwrap();
-    app.config.as_ref().map(|r| r.clone())
+fn load_config() -> Option<Setting> {
+    let home = dirs::home_dir()?;
+    let f = home.join("flock_inspect.json");
+    let data = fs::read_to_string(f)
+        .map_err(|err| {
+            log::error!("Failed to read config file: {}", err);
+        })
+        .ok()?;
+    let setting: Setting = serde_json::from_str(&data)
+        .map_err(|err| {
+            log::error!("Failed to parse config file: {}", err);
+        })
+        .ok()?;
+    Some(setting)
+}
+
+fn get_default_config() -> Setting {
+    Setting::new()
 }
 
 #[tauri::command]
-pub fn set_config(app: AppArg<'_>, config: Setting) {
+pub fn validata_path(s: &str) -> Result<(), Error> {
+    return JsonPath::parse(s).map(|_| ()).map_err(|e| Error::ParseError(e));
+}
+
+#[tauri::command]
+pub fn get_config(app: AppArg<'_>) -> Option<Setting> {
     let mut app = app.0.lock().unwrap();
-    app.config = Some(config)
+    if let Some(cfg) = &app.config {
+        return Some(cfg.clone());
+    }
+    let cfg = load_config().or_else(|| Some(get_default_config()));
+    app.config = cfg.clone();
+    cfg
+}
+
+#[tauri::command]
+pub fn set_config(app: AppArg<'_>, config: Setting) -> Result<(), Error> {
+    for rule in config.annotations.iter() {
+        validata_path(&rule.value_path)?
+    }
+    let mut app = app.0.lock().unwrap();
+    app.config = Some(config);
+    Ok(())
 }
 
 #[tauri::command]
@@ -88,7 +118,7 @@ pub fn next_frame_info(app: AppArg<'_>) -> Option<FrameInfo> {
 
     let timestamp_dir = Path::new(&app.root_dir).join(format!("{curtimestamp}"));
 
-    return read_frame_info(curtimestamp, &timestamp_dir);
+    return read_frame_info(app.config.as_ref().unwrap(), curtimestamp, &timestamp_dir);
 }
 
 #[tauri::command]
@@ -105,5 +135,5 @@ pub fn previous_frame_info(app: AppArg<'_>) -> Option<FrameInfo> {
 
     let timestamp_dir = Path::new(&app.root_dir).join(format!("{curtimestamp}"));
 
-    return read_frame_info(curtimestamp, &timestamp_dir);
+    return read_frame_info(app.config.as_ref().unwrap(), curtimestamp, &timestamp_dir);
 }

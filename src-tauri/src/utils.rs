@@ -1,8 +1,10 @@
-use crate::models::{FrameInfo, Rect, Target};
+use crate::models::{FrameInfo, Rect, Setting, Target};
 use crate::{skip_fail, skip_none};
 use base64::{engine::general_purpose, Engine as _};
 use serde::Deserialize;
 use serde_json::Value;
+use serde_json_path::JsonPath;
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use urlencoding;
@@ -15,13 +17,32 @@ pub fn rfind_utf8(s: &str, chr: char) -> Option<usize> {
     }
 }
 
-pub fn read_frame_info(timestamp: i64, timestamp_dir: &Path) -> Option<FrameInfo> {
+pub fn get_overlay_strings(cfg: &Setting, module: &str, json: &Value) -> Vec<String> {
+    cfg.annotations
+            .iter()
+            .filter_map(|rule| {
+                if rule.inspoint != module {
+                    return None;
+                }
+                let path = JsonPath::parse(&rule.value_path).unwrap();
+                return path.query(json).exactly_one().ok().map(|v| format!("{}: {}", rule.key, v.to_string()));
+            })
+            .collect()
+}
+
+pub fn read_frame_info(cfg: &Setting, timestamp: i64, timestamp_dir: &Path) -> Option<FrameInfo> {
     let mut targets = Vec::new();
 
     let dir_result = fs::read_dir(&timestamp_dir).map_err(|e| {
         log::error!("{:?}", e);
         e
     });
+
+    let mut tracked_targets: HashMap<i64, Target> = HashMap::new();
+
+    let mut detects: HashMap<Rect, Value> = HashMap::new();
+    let mut tracks: HashMap<Rect, i64> = HashMap::new();
+
     for entry in dir_result.ok()? {
         let entry = skip_fail!(entry);
         let meta = skip_fail!(entry.metadata());
@@ -41,15 +62,66 @@ pub fn read_frame_info(timestamp: i64, timestamp_dir: &Path) -> Option<FrameInfo
         let json: Value = skip_fail!(serde_json::from_str(&s));
 
         let a = &json["roi"]["$binary"]["$readable"];
-        let rect = Rect::deserialize(a).ok();
+        let roi = Rect::deserialize(a).ok();
+        let track_id = json["track_id"].as_i64();
 
-        targets.push(Target {
-            track_id: 0,
-            label: 0,
-            roi: rect,
-            selected: false,
-            annotations: Vec::new(),
-        });
+        if !roi.is_none() && track_id.is_none() {
+            detects.insert(roi.unwrap(), json);
+            continue;
+        }
+
+        if track_id.is_none() {
+            continue;
+        }
+
+        let roi = roi.unwrap();
+        let track_id = track_id.unwrap();
+        tracks.insert(roi.clone(), track_id);
+
+        let target = tracked_targets.get_mut(&track_id);
+
+        let mut overlay_strings: Vec<String> = get_overlay_strings(cfg, &module, &json);
+
+        if !target.is_none() {
+            let target = target.unwrap();
+            target.annotations.append(&mut overlay_strings);
+            continue;
+        }
+
+        tracked_targets.insert(
+            track_id,
+            Target {
+                track_id,
+                label: json["label"].as_i64().unwrap(),
+                roi: Some(roi),
+                selected: false,
+                annotations: overlay_strings,
+            },
+        );
+    }
+
+    for (roi, v) in detects.into_iter() {
+        let track_id = tracks.get(&roi);
+
+        let mut overlay_strings = get_overlay_strings(cfg, "flock:detect_module", &v);
+
+        if track_id.is_none() || !tracked_targets.contains_key(track_id.as_ref().unwrap()) {
+            targets.push(Target {
+                track_id: -1,
+                label: v["label"].as_i64().unwrap(),
+                roi: Some(roi),
+                selected: false,
+                annotations: overlay_strings,
+            });
+            continue;
+        }
+        let track_id = track_id.unwrap();
+        let target = tracked_targets.get_mut(track_id).unwrap();
+        target.annotations.append(&mut overlay_strings);
+    }
+
+    for (_, target) in tracked_targets {
+        targets.push(target);
     }
 
     let frame_path = timestamp_dir.join("frame.jpg");
@@ -68,6 +140,10 @@ pub fn read_frame_info(timestamp: i64, timestamp_dir: &Path) -> Option<FrameInfo
 
 #[cfg(test)]
 mod tests {
+    use crate::models::Setting;
+    use serde_json::json;
+    use serde_json_path::JsonPath;
+
     use super::{read_frame_info, rfind_utf8};
     use std::path::Path;
 
@@ -79,6 +155,16 @@ mod tests {
 
     #[test]
     fn test_read_frame_info() {
-        read_frame_info(0, Path::new("")).unwrap();
+        let cfg = Setting::new();
+        let f = read_frame_info(&cfg, 0, Path::new("/data/vps/10002023060605043241601/0")).unwrap();
+        print!("{:?}", f);
+    }
+
+    #[test]
+    fn test_json_path() {
+        let value = json!({ "foo": { "bar": ["baz", 42] } });
+        let path = JsonPath::parse("$.foo.bar[1]").unwrap();
+        let node = path.query(&value).exactly_one().unwrap();
+        assert_eq!(node.to_string(), "42");
     }
 }
