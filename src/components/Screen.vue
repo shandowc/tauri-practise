@@ -238,16 +238,18 @@ function displayImg() {
                     if (i === mouseTargetIdx) {
                         selectedTargets.push(t);
                     } else {
-                        drawRectangle(false, roi, t.selected ? "green" : "red", dash);
-                        drawAttributes(false, roi.left + roi.width, roi.top, t.annotations)
+                        const annotations = [`label: ${t.label}`, `roi: (${roi.left},${roi.top},${roi.width},${roi.height})`].concat(t.annotations);
+                        drawRectangle(false, roi, t.selected ? "green" : "red", []);
+                        drawAttributes(false, roi.left + roi.width, roi.top, annotations)
                     }
                 });
             }
             selectedTargets.forEach((t: Target, i: number) => {
                 const roi = t.roi;
                 const dash = t.track_selected ? [] : [5, 5];
-                drawRectangle(true, roi, t.selected ? "green" : "red", dash);
-                drawAttributes(true, roi.left + roi.width, roi.top, t.annotations)
+                const annotations = [`label: ${t.label}`, `roi: (${roi.left},${roi.top},${roi.width},${roi.height})`].concat(t.annotations);
+                drawRectangle(true, roi, t.selected ? "green" : "red", []);
+                drawAttributes(true, roi.left + roi.width, roi.top, annotations)
             });
             ctx.restore();
             dirty = false;

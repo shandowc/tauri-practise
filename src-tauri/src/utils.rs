@@ -19,31 +19,31 @@ pub fn rfind_utf8(s: &str, chr: char) -> Option<usize> {
 
 pub fn get_overlay_strings(cfg: &Setting, module: &str, json: &Value) -> Vec<String> {
     cfg.annotations
-            .iter()
-            .filter_map(|rule| {
-                if rule.inspoint != module {
-                    return None;
-                }
-                let path = JsonPath::parse(&rule.value_path).unwrap();
-                return path.query(json).exactly_one().ok().map(|v| format!("{}: {}", rule.key, v.to_string()));
-            })
-            .collect()
+        .iter()
+        .filter_map(|rule| {
+            if rule.inspoint != module {
+                return None;
+            }
+            let path = JsonPath::parse(&rule.value_path).unwrap();
+            return path
+                .query(json)
+                .exactly_one()
+                .ok()
+                .map(|v| format!("{}: {}", rule.key, v.to_string()));
+        })
+        .collect()
 }
 
-pub fn read_frame_info(cfg: &Setting, timestamp: i64, timestamp_dir: &Path) -> Option<FrameInfo> {
-    let mut targets = Vec::new();
-
+pub fn read_timestamp_dir(timestamp_dir: &Path) -> Vec<(String, String, Value)> {
     let dir_result = fs::read_dir(&timestamp_dir).map_err(|e| {
         log::error!("{:?}", e);
         e
     });
-
-    let mut tracked_targets: HashMap<i64, Target> = HashMap::new();
-    let mut detects: HashMap<Rect, Value> = HashMap::new();
-    let mut tracks: HashMap<Rect, i64> = HashMap::new();
-    let mut jsons: HashMap<String, Vec<String>> = HashMap::new();
-
-    for entry in dir_result.ok()? {
+    let mut res = Vec::new();
+    if dir_result.is_err() {
+        return res;
+    }
+    for entry in dir_result.unwrap() {
         let entry = skip_fail!(entry);
         let meta = skip_fail!(entry.metadata());
         if !meta.is_file() {
@@ -55,51 +55,48 @@ pub fn read_frame_info(cfg: &Setting, timestamp: i64, timestamp_dir: &Path) -> O
         }
         let idx = skip_none!(rfind_utf8(&name, '-'));
         let module = skip_fail!(urlencoding::decode(&name[..idx])).into_owned();
-
-        // log::info!("{module}");
-
         let s = skip_fail!(fs::read_to_string(entry.path()));
-
-        if let Some(v) = jsons.get_mut(&module) {
-            v.push(s.clone());
-        } else {
-            jsons.insert(module.clone(), vec![s.clone()]);
-        }
-
         let json: Value = skip_fail!(serde_json::from_str(&s));
+        res.push((module, s, json));
+    }
+    return res;
+}
 
-        let a = &json["roi"]["$binary"]["$readable"];
-        let roi = Rect::deserialize(a).ok();
-        let track_id = json["track_id"].as_i64();
+pub fn read_frame_info(cfg: &Setting, timestamp: i64, timestamp_dir: &Path) -> Option<FrameInfo> {
+    let mut targets = Vec::new();
 
-        if !roi.is_none() && track_id.is_none() {
-            detects.insert(roi.unwrap(), json);
+    let infos = read_timestamp_dir(timestamp_dir);
+
+    // initial track maps
+    let mut tracked_targets: HashMap<i64, Target> = HashMap::new();
+    let mut tracks: HashMap<Rect, i64> = HashMap::new();
+    for (module, content, jvalue) in infos.iter() {
+        if module != "flock:face_track_module" && module != "struct_track_module" {
             continue;
         }
-
+        let track_id = jvalue["track_id"].as_i64();
         if track_id.is_none() {
+            log::warn!("track has no track_id: {}", content);
             continue;
         }
 
+        let jroi = &jvalue["roi"]["$binary"]["$readable"];
+        let roi = Rect::deserialize(jroi).ok();
+        if roi.is_none() {
+            log::warn!("track has no roi: {}", content);
+            continue;
+        }
         let roi = roi.unwrap();
         let track_id = track_id.unwrap();
+
         tracks.insert(roi.clone(), track_id);
 
-        let target = tracked_targets.get_mut(&track_id);
-
-        let mut overlay_strings: Vec<String> = get_overlay_strings(cfg, &module, &json);
-
-        if !target.is_none() {
-            let target = target.unwrap();
-            target.annotations.append(&mut overlay_strings);
-            continue;
-        }
-
+        let overlay_strings: Vec<String> = get_overlay_strings(cfg, &module, jvalue);
         tracked_targets.insert(
             track_id,
             Target {
                 track_id,
-                label: json["label"].as_i64().unwrap(),
+                label: jvalue["label"].as_i64().unwrap(),
                 roi,
                 selected: false,
                 annotations: overlay_strings,
@@ -107,23 +104,62 @@ pub fn read_frame_info(cfg: &Setting, timestamp: i64, timestamp_dir: &Path) -> O
         );
     }
 
-    for (roi, v) in detects.into_iter() {
+    // assign detects track_ids
+    for (module, content, jvalue) in infos.iter() {
+        if module != "flock:detect_module" {
+            continue;
+        }
+        let jroi = &jvalue["roi"]["$binary"]["$readable"];
+        let roi = Rect::deserialize(jroi).ok();
+        if roi.is_none() {
+            log::warn!("detect has no roi: {}", content);
+            continue;
+        }
+        let roi = roi.unwrap();
+
         let track_id = tracks.get(&roi);
-
-        let mut overlay_strings = get_overlay_strings(cfg, "flock:detect_module", &v);
-
-        if track_id.is_none() || !tracked_targets.contains_key(track_id.as_ref().unwrap()) {
-            targets.push(Target {
-                track_id: -1,
-                label: v["label"].as_i64().unwrap(),
-                roi,
-                selected: false,
-                annotations: overlay_strings,
-            });
+        if track_id.is_none() {
+            log::warn!("detect has no related track_id: {}", content);
             continue;
         }
         let track_id = track_id.unwrap();
-        let target = tracked_targets.get_mut(track_id).unwrap();
+
+        let target = tracked_targets.get_mut(track_id);
+        if target.is_none() {
+            log::warn!("detect has no matching track: {}", content);
+            continue;
+        }
+        let mut overlay_strings: Vec<String> = get_overlay_strings(cfg, &module, jvalue);
+        let target = target.unwrap();
+        target.annotations.append(&mut overlay_strings);
+    }
+
+    // process other modules, map by track_id
+    let mut jsons: HashMap<String, Vec<String>> = HashMap::new();
+    for (module, content, jvalue) in infos.iter() {
+        if let Some(v) = jsons.get_mut(module) {
+            v.push(content.clone());
+        } else {
+            jsons.insert(module.clone(), vec![content.clone()]);
+        }
+        if module == "flock:face_track_module"
+            || module == "struct_track_module"
+            || module == "flock:detect_module"
+        {
+            continue;
+        }
+        let track_id = jvalue["track_id"].as_i64();
+        if track_id.is_none() {
+            continue;
+        }
+        let track_id = track_id.unwrap();
+        let target = tracked_targets.get_mut(&track_id);
+        if target.is_none() {
+            log::warn!("object has no matching track: {}", content);
+            continue;
+        }
+        let mut overlay_strings: Vec<String> = get_overlay_strings(cfg, &module, jvalue);
+        let target = target.unwrap();
         target.annotations.append(&mut overlay_strings);
     }
 

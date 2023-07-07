@@ -18,11 +18,23 @@ pub struct Setting {
 impl Setting {
     pub fn new() -> Setting {
         return Setting {
-            annotations: vec![AnnotationConfig {
-                inspoint: String::from("flock:detect_module"),
-                key: String::from("detect_confidence"),
-                value_path: String::from("$.confidence"),
-            }],
+            annotations: vec![
+                AnnotationConfig {
+                    inspoint: String::from("flock:detect_module"),
+                    key: String::from("detect_confidence"),
+                    value_path: String::from("$.confidence"),
+                },
+                AnnotationConfig {
+                    inspoint: String::from("flock:select_module"),
+                    key: String::from("select_status"),
+                    value_path: String::from("$.status"),
+                },
+                AnnotationConfig {
+                    inspoint: String::from("flock:select_module"),
+                    key: String::from("select_quality"),
+                    value_path: String::from("$.quality"),
+                },
+            ],
         };
     }
 }
@@ -40,7 +52,7 @@ pub struct FrameInfo {
     pub timestamp: i64,
     pub image_data: String,
     pub targets: Vec<Target>,
-    pub jsons: HashMap<String, Vec<String>>
+    pub jsons: HashMap<String, Vec<String>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
