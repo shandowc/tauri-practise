@@ -24,32 +24,45 @@
                 </svg>
             </button>
         </div>
-        <!-- <ContextMenu :event="contextMouseEvent" :options="options" v-on-click-outside="closeContextMenu"
-            v-on-click-ouside="closeContextMenu" /> -->
     </div>
+    <el-collapse>
+      <el-collapse-item title="Consistency" name="1">
+        <div>
+          Consistent with real life: in line with the process and logic of real
+          life, and comply with languages and habits that the users are used to;
+        </div>
+        <div>
+          Consistent within interface: all elements should be consistent, such
+          as: design style, icons and texts, position of elements, etc.
+        </div>
+      </el-collapse-item>
+    </el-collapse>
 </template>
 
 <script setup lang="ts">
 import type { Point, FrameInfo, Target, Rect } from '../types/image';
-import { onUnmounted, ref, computed } from 'vue';
+import { onUnmounted, ref, computed, reactive } from 'vue';
+import ContextMenu, {MenuOptions} from '@imengyu/vue3-context-menu'
 
-import ContextMenu from './ContextMenu.vue';
-import { vOnClickOutside } from '@vueuse/components'
+const menuData = reactive<MenuOptions>({
+    x: 0,
+    y: 0,
+    items: [
+        {
+            label: '查看对象JSON',
+            hidden: true,
+        },
+        {
+            label: '查看本帧所有JSON',
+        }
+    ]
+});
 
-let contextMouseEvent = ref<MouseEvent>();
-let options = [
-    {
-        name: "haha",
-    }
-]
-
-function onContextMenu(event: MouseEvent) {
-    event.preventDefault();
-    contextMouseEvent.value = event;
-}
-
-function closeContextMenu() {
-    contextMouseEvent.value = undefined;
+function onContextMenu(e: MouseEvent) {
+    e.preventDefault();
+    menuData.x = e.x;
+    menuData.y = e.y;
+    ContextMenu.showContextMenu(menuData);
 }
 
 const emit = defineEmits(['previous', 'next']);
@@ -122,6 +135,11 @@ function mouseMove(evt: MouseEvent) {
     if (selected != mouseTargetIdx) {
         dirty = true;
         mouseTargetIdx = selected;
+        if (selected != -1) {
+            menuData.items![0].hidden = false;
+        } else {
+            menuData.items![0].hidden = true;
+        }
     }
 
     if (leftMouseDown) {
