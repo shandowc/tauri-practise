@@ -1,40 +1,50 @@
 <template>
-    <div class="flex items-center justify-center">
-        <div class="relative">
-            <canvas ref="mycanvas" class="h-full w-full bg-black rounded-lg" @mousemove="mouseMove" @mousedown="mouseDown"
-                @mouseup="mouseUp" @wheel="onWheel" @contextmenu="onContextMenu">
-            </canvas>
+    <el-tabs type="card" v-model="activeName" tabPosition="left">
+        <el-tab-pane label="视图" name="first">
+            <div class="flex items-center justify-center">
+                <div class="relative">
+                    <canvas ref="mycanvas" class="h-full w-full bg-black rounded-lg" @mousemove="mouseMove"
+                        @mousedown="mouseDown" @mouseup="mouseUp" @wheel="onWheel" @contextmenu="onContextMenu">
+                    </canvas>
 
-            <img ref="myimg" :src="imageSrc" class="hidden" @load="displayImg" />
-            <button
-                class="absolute top-1/2 left-0 transform -translate-y-1/2 translate-x-full bg-gray-800 text-white p-2 rounded-full shadow-md transition duration-500 opacity-20 hover:opacity-100"
-                @click="emit('previous')">
-                <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                </svg>
-            </button>
+                    <img ref="myimg" :src="imageSrc" class="hidden" @load="displayImg" />
+                    <button
+                        class="absolute top-1/2 left-0 transform -translate-y-1/2 translate-x-full bg-gray-800 text-white p-2 rounded-full shadow-md transition duration-500 opacity-20 hover:opacity-100"
+                        @click="emit('previous')">
+                        <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </button>
 
-            <button
-                class="absolute top-1/2 right-0 transform -translate-y-1/2 translate-x-[-100%] bg-gray-800 text-white p-2 rounded-full shadow-md transition duration-500 opacity-20 hover:opacity-100"
-                @click="emit('next')">
-                <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                </svg>
-            </button>
-        </div>
-        <!-- <ContextMenu :event="contextMouseEvent" :options="options" v-on-click-outside="closeContextMenu"
+                    <button
+                        class="absolute top-1/2 right-0 transform -translate-y-1/2 translate-x-[-100%] bg-gray-800 text-white p-2 rounded-full shadow-md transition duration-500 opacity-20 hover:opacity-100"
+                        @click="emit('next')">
+                        <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </div>
+                <!-- <ContextMenu :event="contextMouseEvent" :options="options" v-on-click-outside="closeContextMenu"
             v-on-click-ouside="closeContextMenu" /> -->
-    </div>
+            </div>
+        </el-tab-pane>
+        <el-tab-pane label="JSON" name="jsontab">
+            <ShowJson :jsons="props.msg?.jsons"></ShowJson>
+        </el-tab-pane>
+    </el-tabs>
 </template>
 
 <script setup lang="ts">
 import type { Point, FrameInfo, Target, Rect } from '../types/image';
 import { onUnmounted, ref, computed } from 'vue';
 
+const activeName = ref('first')
+
 import ContextMenu from './ContextMenu.vue';
 import { vOnClickOutside } from '@vueuse/components'
+import ShowJson from './ShowJson.vue';
 
 let contextMouseEvent = ref<MouseEvent>();
 let options = [
@@ -238,7 +248,7 @@ function displayImg() {
                     if (i === mouseTargetIdx) {
                         selectedTargets.push(t);
                     } else {
-                        const annotations = [`label: ${t.label}`, `roi: (${roi.left},${roi.top},${roi.width},${roi.height})`].concat(t.annotations);
+                        const annotations = [`track_id: ${t.track_id}`, `label: ${t.label}`, `roi: (${roi.left},${roi.top},${roi.width},${roi.height})`].concat(t.annotations);
                         drawRectangle(false, roi, t.selected ? "green" : "red", []);
                         drawAttributes(false, roi.left + roi.width, roi.top, annotations)
                     }
@@ -247,7 +257,7 @@ function displayImg() {
             selectedTargets.forEach((t: Target, i: number) => {
                 const roi = t.roi;
                 const dash = t.track_selected ? [] : [5, 5];
-                const annotations = [`label: ${t.label}`, `roi: (${roi.left},${roi.top},${roi.width},${roi.height})`].concat(t.annotations);
+                const annotations = [`track_id: ${t.track_id}`, `label: ${t.label}`, `roi: (${roi.left},${roi.top},${roi.width},${roi.height})`].concat(t.annotations);
                 drawRectangle(true, roi, t.selected ? "green" : "red", []);
                 drawAttributes(true, roi.left + roi.width, roi.top, annotations)
             });

@@ -34,6 +34,16 @@ impl Setting {
                     key: String::from("select_quality"),
                     value_path: String::from("$.quality"),
                 },
+                AnnotationConfig {
+                    inspoint: String::from("flock:face_quality_module"),
+                    key: String::from("quality_quality"),
+                    value_path: String::from("$.quality"),
+                },
+                AnnotationConfig {
+                    inspoint: String::from("flock:face_quality_module"),
+                    key: String::from("quality_integrate_quality"),
+                    value_path: String::from("$.integrate_quality"),
+                },
             ],
         };
     }
