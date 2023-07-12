@@ -5,18 +5,20 @@
     <el-select v-model="selected_track" class="m-2" placeholder="Select" size="large">
         <el-option v-for="track_id in track_id_list" :key="track_id" :label="track_id" :value="track_id" />
     </el-select>
-    <JsonViewer :value="jsonData" copyable sort expanded expandDepth="2" theme="dark" class="w-screen text-left" />
+    <JsonViewer :value="jsonData" copyable sort expanded :expandDepth="expandDepth" theme="dark" @onDblKeyClick="dblKeyClick" class="w-screen text-left" />
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
 import { onMounted } from 'vue';
-import { JsonViewer } from "vue3-json-viewer";
+import JsonViewer from "./JsonViewer/JsonViewer.vue";
 import { computed } from '@vue/reactivity';
 
 const props = defineProps<{
     jsons: Record<string, string[]>|undefined;
 }>()
+
+const expandDepth = 2;
 
 const selected_module = ref<string>('');
 const selected_track = ref<number>();
@@ -52,5 +54,9 @@ const jsonData = computed(() => {
     }
     return res;
 });
+
+const dblKeyClick = (keyName: string)=>{
+  console.log(keyName,"it was click")
+}
 
 </script>

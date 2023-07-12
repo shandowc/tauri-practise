@@ -25,7 +25,7 @@ import { open } from '@tauri-apps/api/dialog';
 import { invoke } from "@tauri-apps/api/tauri";
 
 const router = useRouter();
-const input1 = ref('/data/sourcecode/src/gitlab.sz.sensetime.com/viper/engine-video-process-service/tmp/video-process-OBJECT_FACE-1686555508741839249/inspect/123412341234')
+const input1 = ref('/data/sourcecode/src/gitlab.sz.sensetime.com/viper/engine-video-process-service/tmp/inspect')
 
 const loadingText = ref('Loading')
 
