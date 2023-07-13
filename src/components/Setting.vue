@@ -10,14 +10,9 @@
         </el-table-column>
         <el-table-column label="观测点">
             <template #default="scope">
-                <EditableCell :value="scope.row.inspoint" @change="val => { scope.row.inspoint = val }"
-                    editable-component="el-select" close-event="change">
+                <EditableCell :value="scope.row.inspoint" @change="val => { scope.row.inspoint = val }">
                     <template v-slot:content>
                         <span>{{ scope.row.inspoint }}</span>
-                    </template>
-
-                    <template v-slot:edit-component-slot>
-                        <!-- <el-option v-for="(_, key) in exInspectJsons" :value="key" :label="key"></el-option> -->
                     </template>
                 </EditableCell>
             </template>
@@ -52,9 +47,10 @@
 import { ref } from 'vue';
 import { onMounted } from 'vue';
 import EditableCell from './EditableCell.vue';
-import type { Setting, AnnotationConfig } from '../types/image';
+import type { Setting, AnnotationConfig } from '../types/settings';
 import { ElMessage } from 'element-plus';
 import { invoke } from "@tauri-apps/api/tauri";
+import { getConfig, saveConfig } from '../utils/config';
 
 const tableData = ref<AnnotationConfig[]>([]);
 
@@ -73,7 +69,7 @@ function onAddItem() {
 const setting = ref<Setting>();
 
 onMounted(async () => {
-    setting.value = await invoke("get_config");
+    setting.value = getConfig();
     tableData.value = setting.value?.annotations ? setting.value.annotations : [];
 });
 
@@ -85,11 +81,11 @@ async function onSubmit() {
     const data = setting.value;
     data!.annotations = tableData.value;
     if (data) {
-        const err = await invoke("set_config", {config: data});
-        if (err) {
-            ElMessage.error(err)
-        } else {
+        try {
+            saveConfig(data);
             ElMessage.success('success')
+        } catch (error: any) {
+            ElMessage.error(error)
         }
     }
 }

@@ -27,12 +27,4 @@ export interface Target {
   annotations: string[];
 }
 
-export interface Setting {
-  annotations: AnnotationConfig[];
-}
 
-export interface AnnotationConfig {
-  inspoint: String,
-  key: String,
-  value_path: String,
-}

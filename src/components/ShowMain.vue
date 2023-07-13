@@ -1,5 +1,5 @@
 <template>
-    <Screen :msg="currentFrame" @previous="previous" @next="next" />
+    <Screen :msg="currentFrame" @previous="previous" @next="next" @refresh="refresh" />
 </template>
   
 <script setup lang="ts">
@@ -33,12 +33,14 @@ function next() {
     })
 }
 
-onMounted(async () => {
-    const cfg = await invoke("get_config");
-    console.log(cfg);
-    
+function refresh() {
     invoke("current_frame_info").then((dataf)=>{
-        console.log(dataf)
+        currentFrame.value = dataf as FrameInfo;
+    })
+}
+
+onMounted(async () => {
+    invoke("current_frame_info").then((dataf)=>{
         currentFrame.value = dataf as FrameInfo;
     })
 });

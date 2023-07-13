@@ -13,10 +13,14 @@ import { ref } from 'vue';
 import { onMounted } from 'vue';
 import JsonViewer from "./JsonViewer/JsonViewer.vue";
 import { computed } from '@vue/reactivity';
+import { getConfig, saveConfig } from '../utils/config';
+import { ElMessage } from 'element-plus';
 
 const props = defineProps<{
     jsons: Record<string, string[]>|undefined;
-}>()
+}>();
+
+const emit = defineEmits(['refresh']);
 
 const expandDepth = 2;
 
@@ -55,8 +59,29 @@ const jsonData = computed(() => {
     return res;
 });
 
-const dblKeyClick = (keyName: string)=>{
-  console.log(keyName,"it was click")
+const dblKeyClick = (path: string[])=>{
+    let cfg = getConfig();
+    if (path.length < 2) {
+        return;
+    }
+    let module = selected_module.value;
+    let valuePath = "$";
+    for (const k of path.slice(1)) {
+        if (!k) {
+            valuePath = valuePath + "[*]";
+            continue;
+        }
+        valuePath = valuePath + "." + k;
+    }
+    let key = `${valuePath}(${module})`;
+    cfg.annotations.push({
+        inspoint: module,
+        key: key,
+        value_path: valuePath,
+    });
+    saveConfig(cfg);
+    emit('refresh');
+    ElMessage.success(`show ${key} in overlay!`)
 }
 
 </script>

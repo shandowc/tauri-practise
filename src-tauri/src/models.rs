@@ -15,40 +15,6 @@ pub struct Setting {
     pub annotations: Vec<AnnotationConfig>,
 }
 
-impl Setting {
-    pub fn new() -> Setting {
-        return Setting {
-            annotations: vec![
-                AnnotationConfig {
-                    inspoint: String::from("flock:detect_module"),
-                    key: String::from("detect_confidence"),
-                    value_path: String::from("$.confidence"),
-                },
-                AnnotationConfig {
-                    inspoint: String::from("flock:select_module"),
-                    key: String::from("select_status"),
-                    value_path: String::from("$.status"),
-                },
-                AnnotationConfig {
-                    inspoint: String::from("flock:select_module"),
-                    key: String::from("select_quality"),
-                    value_path: String::from("$.quality"),
-                },
-                AnnotationConfig {
-                    inspoint: String::from("flock:face_quality_module"),
-                    key: String::from("quality_quality"),
-                    value_path: String::from("$.quality"),
-                },
-                AnnotationConfig {
-                    inspoint: String::from("flock:face_quality_module"),
-                    key: String::from("quality_integrate_quality"),
-                    value_path: String::from("$.integrate_quality"),
-                },
-            ],
-        };
-    }
-}
-
 #[derive(Debug, Default, Serialize)]
 pub struct App {
     pub root_dir: String,

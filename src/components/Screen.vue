@@ -31,7 +31,7 @@
             </div>
         </el-tab-pane>
         <el-tab-pane label="JSON" name="jsontab">
-            <ShowJson :jsons="props.msg?.jsons"></ShowJson>
+            <ShowJson :jsons="props.msg?.jsons" @refresh="emit('refresh')"></ShowJson>
         </el-tab-pane>
     </el-tabs>
 </template>
@@ -62,7 +62,7 @@ function closeContextMenu() {
     contextMouseEvent.value = undefined;
 }
 
-const emit = defineEmits(['previous', 'next']);
+const emit = defineEmits(['previous', 'next', 'refresh']);
 
 const props = defineProps<{ msg: FrameInfo | undefined }>()
 

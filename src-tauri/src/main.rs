@@ -30,7 +30,6 @@ fn main() {
             command::validata_path,
             command::current_frame_info,
             command::greet,
-            command::get_config,
             command::set_config,
             command::load_root_dir,
             command::next_frame_info,

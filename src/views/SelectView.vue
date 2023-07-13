@@ -23,16 +23,17 @@ import { ElLoading } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { open } from '@tauri-apps/api/dialog';
 import { invoke } from "@tauri-apps/api/tauri";
+import { getLastInspectDir, setLastInspectDir } from "../utils/config";
 
 const router = useRouter();
-const input1 = ref('/data/sourcecode/src/gitlab.sz.sensetime.com/viper/engine-video-process-service/tmp/inspect')
+const input1 = ref(getLastInspectDir());
 
 const loadingText = ref('Loading')
 
 async function openDirectoryDialog() {
     const selected = await open({
         directory: true,
-        defaultPath: "/data/vps/10002023060605043241601/"
+        defaultPath: getLastInspectDir() || undefined,
     }) as (string | null);
     if (selected && selected.length > 0) {
         input1.value = selected;
@@ -48,7 +49,11 @@ function openFolder() {
     invoke("load_root_dir", { rootDir: input1.value }).then(()=>{
         loading.close();
         sessionStorage.setItem("debugfolder", input1.value);
+        setLastInspectDir(input1.value);
         router.push("/")
+    }).catch((e)=>{
+        loading.close();
+        ElMessage.error(e);
     })
 }
 

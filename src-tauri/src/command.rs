@@ -27,40 +27,9 @@ impl serde::Serialize for Error {
     }
 }
 
-fn load_config() -> Option<Setting> {
-    let home = dirs::home_dir()?;
-    let f = home.join("flock_inspect.json");
-    let data = fs::read_to_string(f)
-        .map_err(|err| {
-            log::error!("Failed to read config file: {}", err);
-        })
-        .ok()?;
-    let setting: Setting = serde_json::from_str(&data)
-        .map_err(|err| {
-            log::error!("Failed to parse config file: {}", err);
-        })
-        .ok()?;
-    Some(setting)
-}
-
-fn get_default_config() -> Setting {
-    Setting::new()
-}
-
 #[tauri::command]
 pub fn validata_path(s: &str) -> Result<(), Error> {
     return JsonPath::parse(s).map(|_| ()).map_err(|e| Error::ParseError(e));
-}
-
-#[tauri::command]
-pub fn get_config(app: AppArg<'_>) -> Option<Setting> {
-    let mut app = app.0.lock().unwrap();
-    if let Some(cfg) = &app.config {
-        return Some(cfg.clone());
-    }
-    let cfg = load_config().or_else(|| Some(get_default_config()));
-    app.config = cfg.clone();
-    cfg
 }
 
 #[tauri::command]
