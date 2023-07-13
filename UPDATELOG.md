@@ -1,3 +1,11 @@
+## v0.0.5
+
+### Features
+
+- change icon.
+- show json alongside image overlays.
+- show json field on image if double clicked.
+
 ## v0.0.4
 
 universal macos app.
