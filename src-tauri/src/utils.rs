@@ -184,24 +184,15 @@ pub fn read_frame_info(cfg: &Setting, timestamp: i64, timestamp_dir: &Path) -> O
 
 #[cfg(test)]
 mod tests {
-    use crate::models::Setting;
     use serde_json::json;
     use serde_json_path::JsonPath;
 
-    use super::{read_frame_info, rfind_utf8};
-    use std::path::Path;
+    use super::rfind_utf8;
 
     #[test]
     fn test_rfind_utf8() {
         let pos = rfind_utf8("你好aa", 'a').unwrap();
         assert_eq!(pos, 3)
-    }
-
-    #[test]
-    fn test_read_frame_info() {
-        let cfg = Setting::new();
-        let f = read_frame_info(&cfg, 0, Path::new("/data/vps/10002023060605043241601/0")).unwrap();
-        print!("{:?}", f);
     }
 
     #[test]
