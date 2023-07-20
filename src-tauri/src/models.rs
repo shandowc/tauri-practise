@@ -24,7 +24,13 @@ pub struct App {
 }
 
 #[derive(Debug, Serialize)]
+pub struct VideoSummary {
+    pub frame_cnt: i32,
+}
+
+#[derive(Debug, Serialize)]
 pub struct FrameInfo {
+    pub frame_idx: i32,
     pub timestamp: i64,
     pub image_data: String,
     pub targets: Vec<Target>,

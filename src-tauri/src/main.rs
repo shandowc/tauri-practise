@@ -34,6 +34,7 @@ fn main() {
             command::load_root_dir,
             command::next_frame_info,
             command::previous_frame_info,
+            command::goto_frame_idx,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

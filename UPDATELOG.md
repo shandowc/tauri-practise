@@ -1,3 +1,9 @@
+## v0.0.7
+
+### Features
+
+- show slice bar for fast seek.
+
 ## v0.0.6
 
 ### Bug Fixes

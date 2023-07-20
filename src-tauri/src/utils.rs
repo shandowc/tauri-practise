@@ -62,7 +62,7 @@ pub fn read_timestamp_dir(timestamp_dir: &Path) -> Vec<(String, String, Value)> 
     return res;
 }
 
-pub fn read_frame_info(cfg: &Setting, timestamp: i64, timestamp_dir: &Path) -> Option<FrameInfo> {
+pub fn read_frame_info(frame_idx: i32, cfg: &Setting, timestamp: i64, timestamp_dir: &Path) -> Option<FrameInfo> {
     let mut targets = Vec::new();
 
     let infos = read_timestamp_dir(timestamp_dir);
@@ -175,6 +175,7 @@ pub fn read_frame_info(cfg: &Setting, timestamp: i64, timestamp_dir: &Path) -> O
     });
 
     Some(FrameInfo {
+        frame_idx,
         timestamp,
         image_data: general_purpose::STANDARD_NO_PAD.encode(content),
         targets,

@@ -1,5 +1,6 @@
 
 export interface FrameInfo {
+  frame_idx: number;
   timestamp: number;
   image_data: string;
   targets: Target[];

@@ -24,6 +24,7 @@ import { ElMessage } from 'element-plus'
 import { open } from '@tauri-apps/api/dialog';
 import { invoke } from "@tauri-apps/api/tauri";
 import { getLastInspectDir, setLastInspectDir } from "../utils/config";
+import type { VideoSummary } from "../types/summary"
 
 const router = useRouter();
 const input1 = ref(getLastInspectDir());
@@ -46,9 +47,11 @@ function openFolder() {
         text: loadingText,
         background: 'rgba(0, 0, 0, 0.7)',
     })
-    invoke("load_root_dir", { rootDir: input1.value }).then(()=>{
+    invoke("load_root_dir", { rootDir: input1.value }).then((res)=>{
         loading.close();
+        let summary = res as VideoSummary;
         sessionStorage.setItem("debugfolder", input1.value);
+        sessionStorage.setItem("frame_cnt", `${summary.frame_cnt}`);
         setLastInspectDir(input1.value);
         router.push("/")
     }).catch((e)=>{
