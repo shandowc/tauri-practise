@@ -17,19 +17,9 @@ const DEFAULT_SETTING = {
             value_path: "$.status",
         },
         {
-            inspoint: "flock:select_module",
-            key: "select_quality",
-            value_path: "$.quality",
-        },
-        {
-            inspoint: "flock:face_quality_module",
-            key: "quality_quality",
-            value_path: "$.quality",
-        },
-        {
-            inspoint: "flock:face_quality_module",
-            key: "quality_integrate_quality",
-            value_path: "$.integrate_quality",
+            inspoint: "flock:target_selector_module",
+            key: "select_status",
+            value_path: "$.status",
         }
     ]
 };

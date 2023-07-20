@@ -1,3 +1,10 @@
+## v0.0.6
+
+### Bug Fixes
+
+- app name error.
+- pach objects not showed.
+
 ## v0.0.5
 
 ### Features

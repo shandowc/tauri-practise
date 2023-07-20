@@ -71,7 +71,7 @@ pub fn read_frame_info(cfg: &Setting, timestamp: i64, timestamp_dir: &Path) -> O
     let mut tracked_targets: HashMap<i64, Target> = HashMap::new();
     let mut tracks: HashMap<Rect, i64> = HashMap::new();
     for (module, content, jvalue) in infos.iter() {
-        if module != "flock:face_track_module" && module != "struct_track_module" {
+        if module != "flock:face_track_module" && module != "flock:struct_track_module" {
             continue;
         }
         let track_id = jvalue["track_id"].as_i64();
