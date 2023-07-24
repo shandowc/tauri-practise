@@ -32,7 +32,7 @@ pub struct VideoSummary {
 pub struct FrameInfo {
     pub frame_idx: i32,
     pub timestamp: i64,
-    pub image_data: String,
+    pub image_path: String,
     pub targets: Vec<Target>,
     pub jsons: HashMap<String, Vec<String>>,
 }

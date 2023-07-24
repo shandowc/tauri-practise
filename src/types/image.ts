@@ -2,7 +2,7 @@
 export interface FrameInfo {
   frame_idx: number;
   timestamp: number;
-  image_data: string;
+  image_path: string;
   targets: Target[];
   jsons: Record<string, string[]>;
 }

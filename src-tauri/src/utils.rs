@@ -1,6 +1,5 @@
 use crate::models::{FrameInfo, Rect, Setting, Target};
 use crate::{skip_fail, skip_none};
-use base64::{engine::general_purpose, Engine as _};
 use serde::Deserialize;
 use serde_json::Value;
 use serde_json_path::JsonPath;
@@ -167,17 +166,10 @@ pub fn read_frame_info(frame_idx: i32, cfg: &Setting, timestamp: i64, timestamp_
         targets.push(target);
     }
 
-    let frame_path = timestamp_dir.join("frame.jpg");
-
-    let content = fs::read(frame_path).unwrap_or_else(|e| {
-        log::warn!("{:?}", e);
-        Vec::new()
-    });
-
     Some(FrameInfo {
         frame_idx,
         timestamp,
-        image_data: general_purpose::STANDARD_NO_PAD.encode(content),
+        image_path: String::from(timestamp_dir.join("frame.jpg").to_str()?),
         targets,
         jsons,
     })

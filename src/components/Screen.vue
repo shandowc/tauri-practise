@@ -39,6 +39,7 @@
 <script setup lang="ts">
 import type { Point, FrameInfo, Target, Rect } from '../types/image';
 import { onUnmounted, ref, computed } from 'vue';
+import { convertFileSrc } from '@tauri-apps/api/tauri';
 
 const activeName = ref('first')
 
@@ -80,7 +81,13 @@ let dirty = true;
 let mouseTargetIdx = -1;
 let firstLoad = true;
 
-const imageSrc = computed(() => "data:image/jpeg;charset=utf-8;base64," + props.msg?.image_data)
+const imageSrc = computed(() => {
+    if (props.msg?.image_path) {
+        return convertFileSrc(props.msg?.image_path)
+    } else {
+        return '';
+    }
+});
 
 onUnmounted(() => {
     stopRendering = true;
