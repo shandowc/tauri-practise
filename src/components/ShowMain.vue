@@ -1,24 +1,28 @@
 <template>
-    <el-slider v-model="curFrameIdx" :max="frameTotalCnt" @change="onSeekIdx" show-input class="m1"/>
+    <el-slider v-model="curFrameIdx" :max="frameTotalCnt" show-input class="m1"/>
     <Screen :msg="currentFrame" @previous="previous" @next="next" @refresh="refresh" />
 </template>
   
 <script setup lang="ts">
 import type { FrameInfo } from '../types/image';
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import Screen from '../components/Screen.vue';
 import { onKeyStroke } from '@vueuse/core';
 import { invoke } from "@tauri-apps/api/tauri";
+import { throttle } from '../utils/utils';
 
 const curFrameIdx = ref(0);
-const frameTotalCnt = ref(parseInt(sessionStorage.getItem("frame_cnt") || '0'));
+const frameTotalCnt = ref(parseInt(sessionStorage.getItem("frame_cnt") || '1') - 1);
 
-function onSeekIdx(val: number) {
-    invoke("goto_frame_idx", { frameIdx: curFrameIdx.value }).then((dataf)=>{
+const [doSeek] = throttle((frameIdx: number)=>{
+    invoke("goto_frame_idx", { frameIdx: frameIdx }).then((dataf)=>{
         currentFrame.value = dataf as FrameInfo;
-        curFrameIdx.value = currentFrame.value.frame_idx;
     })
-}
+}, 200);
+
+watch(curFrameIdx, (frameIdx: number) => {
+    doSeek(frameIdx);
+})
 
 onKeyStroke('ArrowLeft', (e) => {
     e.stopImmediatePropagation();
@@ -35,17 +39,15 @@ onKeyStroke('ArrowRight', (e) => {
 let currentFrame = ref<FrameInfo>();
 
 function previous() {
-    invoke("previous_frame_info").then((dataf)=>{
-        currentFrame.value = dataf as FrameInfo;
-        curFrameIdx.value = currentFrame.value.frame_idx;
-    })
+    if (curFrameIdx.value > 0) {
+        curFrameIdx.value--;
+    }
 }
 
 function next() {
-    invoke("next_frame_info").then((dataf)=>{
-        currentFrame.value = dataf as FrameInfo;
-        curFrameIdx.value = currentFrame.value.frame_idx;
-    })
+    if (curFrameIdx.value < frameTotalCnt.value-1) {
+        curFrameIdx.value++;
+    }
 }
 
 function refresh() {
