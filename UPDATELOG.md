@@ -1,3 +1,9 @@
+## v0.0.9
+
+### Bug Fixes
+
+- fonts not showed.
+
 ## v0.0.8
 
 ### Enhances
