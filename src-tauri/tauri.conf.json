@@ -8,7 +8,7 @@
   },
   "package": {
     "productName": "video-inspector",
-    "version": "0.0.7"
+    "version": "0.0.8"
   },
   "tauri": {
     "allowlist": {
@@ -22,7 +22,9 @@
       },
       "protocol": {
         "asset": true,
-        "assetScope": [ "**" ]
+        "assetScope": [
+          "**"
+        ]
       }
     },
     "bundle": {
