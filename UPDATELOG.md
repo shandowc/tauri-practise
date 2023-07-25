@@ -1,3 +1,9 @@
+## v0.0.8
+
+### Enhances
+
+- add throttle during seeking, better interactivity.
+
 ## v0.0.7
 
 ### Features
