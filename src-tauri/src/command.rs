@@ -1,6 +1,7 @@
+use crate::background::{Request, LoadVideo};
 use crate::models::{AppArg, FrameInfo, Setting, VideoSummary, Error};
 use crate::skip_fail;
-use crate::utils::{read_frame_info, generate_aux_frames};
+use crate::utils::read_frame_info;
 use serde_json_path::JsonPath;
 use std::fs;
 use std::path::Path;
@@ -41,6 +42,7 @@ pub fn load_root_dir(
     app: AppArg<'_>,
     root_dir: &str,
     aux_video: Option<&str>,
+    aux_video_force: Option<bool>,
 ) -> Result<VideoSummary, Error> {
     let root_path = Path::new(root_dir);
 
@@ -65,56 +67,18 @@ pub fn load_root_dir(
     app.timestamps.sort();
 
     if let Some(video) = aux_video {
-        generate_aux_frames(root_path, &app.timestamps, video)?;
+        if let Err(err) = app.ffmpeg_tx.send(Request::LoadVideo(LoadVideo {
+            root_dir: root_dir.to_string(),
+            timestamps: app.timestamps.clone(),
+            video_path: video.to_string(),
+            force: aux_video_force.map_or(false, |v| v),
+        })) {
+            log::warn!("background task error {:?}", err);
+        }
     }
     Ok(VideoSummary {
         frame_cnt: app.timestamps.len() as i32,
     })
-}
-
-#[tauri::command]
-pub fn next_frame_info(app: AppArg<'_>) -> Option<FrameInfo> {
-    let mut app = app.0.lock().unwrap();
-    let mut curridx = app.current_index;
-    let pts_len = app.timestamps.len() as i32;
-
-    curridx = curridx + 1;
-    if curridx > pts_len {
-        return None;
-    }
-    let curtimestamp = *app.timestamps.get(curridx as usize)?;
-    app.current_index = curridx;
-
-    let timestamp_dir = Path::new(&app.root_dir).join(format!("{curtimestamp}"));
-
-    return read_frame_info(
-        curridx,
-        app.config.as_ref().unwrap(),
-        curtimestamp,
-        &timestamp_dir,
-    );
-}
-
-#[tauri::command]
-pub fn previous_frame_info(app: AppArg<'_>) -> Option<FrameInfo> {
-    let mut app = app.0.lock().unwrap();
-    let mut curridx = app.current_index;
-
-    curridx = curridx - 1;
-    if curridx < 0 {
-        return None;
-    }
-    let curtimestamp = *app.timestamps.get(curridx as usize)?;
-    app.current_index = curridx;
-
-    let timestamp_dir = Path::new(&app.root_dir).join(format!("{curtimestamp}"));
-
-    return read_frame_info(
-        curridx,
-        app.config.as_ref().unwrap(),
-        curtimestamp,
-        &timestamp_dir,
-    );
 }
 
 #[tauri::command]
@@ -144,4 +108,12 @@ pub fn goto_frame_idx(app: AppArg<'_>, frame_idx: i32) -> Option<FrameInfo> {
         curtimestamp,
         &timestamp_dir,
     );
+}
+
+#[tauri::command]
+pub fn quit_ffmpeg_process(app: AppArg<'_>) {
+    let app = app.0.lock().unwrap();
+    if let Err(err) = app.ffmpeg_tx.send(Request::StopLoad()) {
+        log::warn!("background task error {:?}", err);
+    }
 }

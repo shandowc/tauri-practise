@@ -1,9 +1,11 @@
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, mpsc::Sender},
 };
 use tauri::State;
+
+use crate::background::Request;
 
 
 #[derive(Debug, thiserror::Error)]
@@ -19,7 +21,6 @@ pub enum Error {
 }
 
 
-#[derive(Default)]
 pub struct AppState(pub Arc<Mutex<App>>);
 
 pub type AppArg<'a> = State<'a, AppState>;
@@ -29,12 +30,13 @@ pub struct Setting {
     pub annotations: Vec<AnnotationConfig>,
 }
 
-#[derive(Debug, Default, Serialize)]
+#[derive(Debug)]
 pub struct App {
     pub root_dir: String,
     pub current_index: i32,
     pub timestamps: Vec<i64>,
     pub config: Option<Setting>,
+    pub ffmpeg_tx: Sender<Request>,
 }
 
 #[derive(Debug, Serialize)]

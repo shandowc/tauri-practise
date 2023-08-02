@@ -21,6 +21,7 @@
             </el-input>
             <div>
                 <el-checkbox v-model="showVideoInput" label="输入辅助视频" size="large" />
+                <el-checkbox v-model="forceVideoReprocess" label="强制视频抽帧" size="large" />
             </div>
         </div>
     </div>
@@ -42,6 +43,7 @@ const videoPath = ref(getLastVideoPath());
 
 const loadingText = ref('Loading');
 const showVideoInput = ref(false);
+const forceVideoReprocess = ref(false);
 
 async function openDirectoryDialog() {
     const selected = await open({
@@ -68,7 +70,10 @@ function openFolder() {
         text: loadingText,
         background: 'rgba(0, 0, 0, 0.7)',
     })
-    const toload: any= { rootDir: input1.value };
+    const toload: any= {
+        rootDir: input1.value,
+        auxVideoForce: true,
+    };
     if (showVideoInput.value) {
         toload.auxVideo = videoPath.value;
         setLastVideoPath(videoPath.value);
