@@ -4,6 +4,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 use tauri::State;
+use std::sync;
 
 
 #[derive(Debug, thiserror::Error)]

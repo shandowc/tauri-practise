@@ -3,6 +3,7 @@ use std::env::current_dir;
 use std::fs::File;
 use std::io;
 use std::io::Error;
+use std::os::unix::prelude::PermissionsExt;
 use tempfile;
 use zip;
 
@@ -40,8 +41,11 @@ fn download_ffmpeg() -> Result<(), Error> {
             "ffmpeg"
         };
         let mut file = archive.by_name(ffmpeg_zip_file).unwrap();
-        let mut dest = File::create(target).unwrap();
+        let mut dest = File::create(&target).unwrap();
         io::copy(&mut file, &mut dest)?;
     }
+    let mut perms = std::fs::metadata(&target)?.permissions();
+    perms.set_mode(0o755);
+    std::fs::set_permissions(&target, perms)?;
     Ok(())
 }

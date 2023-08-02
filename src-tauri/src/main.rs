@@ -1,12 +1,19 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod command;
-mod utils;
 mod macros;
 mod models;
+mod utils;
+mod background;
 
-use std::io::Write;
 use std::env;
+use std::io::Write;
+use std::sync::mpsc::{Receiver, Sender};
+
+
+use std::sync;
+use tauri::Manager;
+
 
 fn main() {
     env_logger::Builder::new()
@@ -25,7 +32,14 @@ fn main() {
         .init();
 
     tauri::Builder::default()
-        .manage(models::AppState(Default::default()))
+        .setup(|app| {
+            let (tx, rx): (Sender<background::Request>, Receiver<backgrond::Request>) =
+                sync::mpsc::channel();
+            thread::spawn(move || background::do_ffmpeg_background(rx));
+            let state = models::AppState(Default::default());
+            app.manage(state);
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             command::validata_path,
             command::current_frame_info,
