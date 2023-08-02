@@ -1,6 +1,6 @@
-use crate::models::{AppArg, FrameInfo, Setting, VideoSummary};
+use crate::models::{AppArg, FrameInfo, Setting, VideoSummary, Error};
 use crate::skip_fail;
-use crate::utils::read_frame_info;
+use crate::utils::{read_frame_info, generate_aux_frames};
 use serde_json_path::JsonPath;
 use std::fs;
 use std::path::Path;
@@ -8,14 +8,6 @@ use std::path::Path;
 #[tauri::command]
 pub fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum Error {
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
-    #[error(transparent)]
-    ParseError(#[from] serde_json_path::ParseError),
 }
 
 impl serde::Serialize for Error {
@@ -45,7 +37,11 @@ pub fn set_config(app: AppArg<'_>, config: Setting) -> Result<(), Error> {
 }
 
 #[tauri::command]
-pub fn load_root_dir(app: AppArg<'_>, root_dir: &str) -> Result<VideoSummary, Error> {
+pub fn load_root_dir(
+    app: AppArg<'_>,
+    root_dir: &str,
+    aux_video: Option<&str>,
+) -> Result<VideoSummary, Error> {
     let root_path = Path::new(root_dir);
 
     let mut app = app.0.lock().unwrap();
@@ -61,16 +57,16 @@ pub fn load_root_dir(app: AppArg<'_>, root_dir: &str) -> Result<VideoSummary, Er
         }
         if let Ok(name) = entry.file_name().into_string() {
             if let Ok(i) = name.parse::<i64>() {
-                let frame_path = entry.path().join("frame.jpg");
-                if !frame_path.exists() {
-                    continue;
-                }
                 app.timestamps.push(i);
             }
         }
     }
     app.current_index = 0;
     app.timestamps.sort();
+
+    if let Some(video) = aux_video {
+        generate_aux_frames(root_path, &app.timestamps, video)?;
+    }
     Ok(VideoSummary {
         frame_cnt: app.timestamps.len() as i32,
     })

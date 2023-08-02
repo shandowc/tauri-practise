@@ -12,6 +12,16 @@
                 </el-input>
                 <el-button type="primary" class="m-l" @click="openFolder">打开</el-button>
             </div>
+            <el-input v-model="videoPath" v-if="showVideoInput" placeholder="video path" class="m1">
+                <template #append>
+                    <el-button @click="showVideoSelectDialog">
+                        <div class="i-fa6-solid:folder-open" />
+                    </el-button>
+                </template>
+            </el-input>
+            <div>
+                <el-checkbox v-model="showVideoInput" label="输入辅助视频" size="large" />
+            </div>
         </div>
     </div>
 </template>
@@ -23,13 +33,15 @@ import { ElLoading } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { open } from '@tauri-apps/api/dialog';
 import { invoke } from "@tauri-apps/api/tauri";
-import { getLastInspectDir, setLastInspectDir } from "../utils/config";
+import { getLastInspectDir, setLastInspectDir, getLastVideoPath, setLastVideoPath } from "../utils/config";
 import type { VideoSummary } from "../types/summary"
 
 const router = useRouter();
 const input1 = ref(getLastInspectDir());
+const videoPath = ref(getLastVideoPath());
 
-const loadingText = ref('Loading')
+const loadingText = ref('Loading');
+const showVideoInput = ref(false);
 
 async function openDirectoryDialog() {
     const selected = await open({
@@ -41,13 +53,27 @@ async function openDirectoryDialog() {
     }
 }
 
+async function showVideoSelectDialog() {
+    const selected = await open({
+        defaultPath: getLastVideoPath() || undefined,
+    }) as (string | null);
+    if (selected && selected.length > 0) {
+        videoPath.value = selected;
+    }
+}
+
 function openFolder() {
     const loading = ElLoading.service({
         lock: true,
         text: loadingText,
         background: 'rgba(0, 0, 0, 0.7)',
     })
-    invoke("load_root_dir", { rootDir: input1.value }).then((res)=>{
+    const toload: any= { rootDir: input1.value };
+    if (showVideoInput.value) {
+        toload.auxVideo = videoPath.value;
+        setLastVideoPath(videoPath.value);
+    }
+    invoke("load_root_dir", toload).then((res)=>{
         loading.close();
         let summary = res as VideoSummary;
         sessionStorage.setItem("debugfolder", input1.value);

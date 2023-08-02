@@ -55,3 +55,15 @@ export function getLastInspectDir(): string {
 export function setLastInspectDir(s: string) {
     localStorage.setItem("last_inspect_dir", s);
 }
+
+export function getLastVideoPath(): string {
+    let s = localStorage.getItem("last_video_path");
+    if (!s) {
+        return '';
+    }
+    return s;
+}
+
+export function setLastVideoPath(s: string) {
+    localStorage.setItem("last_video_path", s);
+}

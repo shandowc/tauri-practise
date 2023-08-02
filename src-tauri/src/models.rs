@@ -5,6 +5,20 @@ use std::{
 };
 use tauri::State;
 
+
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+    #[error(transparent)]
+    ParseError(#[from] serde_json_path::ParseError),
+    #[error(transparent)]
+    FfmpegError(#[from] ffmpeg_sidecar::error::Error),
+    #[error(transparent)]
+    ImageError(#[from] image::ImageError),
+}
+
+
 #[derive(Default)]
 pub struct AppState(pub Arc<Mutex<App>>);
 

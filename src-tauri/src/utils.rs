@@ -1,4 +1,4 @@
-use crate::models::{FrameInfo, Rect, Setting, Target};
+use crate::models::{Error, FrameInfo, Rect, Setting, Target};
 use crate::{skip_fail, skip_none};
 use serde::Deserialize;
 use serde_json::Value;
@@ -7,6 +7,10 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use urlencoding;
+use ffmpeg_sidecar::command::FfmpegCommand;
+use image::{ImageBuffer, Rgb};
+use std::time::Instant;
+
 
 pub fn rfind_utf8(s: &str, chr: char) -> Option<usize> {
     if let Some(rev_pos) = s.chars().rev().position(|c| c == chr) {
@@ -61,7 +65,12 @@ pub fn read_timestamp_dir(timestamp_dir: &Path) -> Vec<(String, String, Value)> 
     return res;
 }
 
-pub fn read_frame_info(frame_idx: i32, cfg: &Setting, timestamp: i64, timestamp_dir: &Path) -> Option<FrameInfo> {
+pub fn read_frame_info(
+    frame_idx: i32,
+    cfg: &Setting,
+    timestamp: i64,
+    timestamp_dir: &Path,
+) -> Option<FrameInfo> {
     let mut targets = Vec::new();
 
     let infos = read_timestamp_dir(timestamp_dir);
@@ -173,6 +182,47 @@ pub fn read_frame_info(frame_idx: i32, cfg: &Setting, timestamp: i64, timestamp_
         targets,
         jsons,
     })
+}
+
+pub fn generate_aux_frames(
+    root_path: &Path,
+    timestamps: &Vec<i64>,
+    video: &str,
+) -> Result<(), Error> {
+    let mut frame_iter = FfmpegCommand::new()
+        .input(video)
+        .rawvideo()
+        .spawn()?
+        .iter()?
+        .filter_frames()
+        .peekable();
+    for ts in timestamps {
+        while frame_iter.peek().is_some() {
+            let frame = frame_iter.next().unwrap();
+            let pts = (frame.timestamp * 1000.0) as i64;
+            if pts == *ts {
+                let image: Option<ImageBuffer<Rgb<u8>, Vec<u8>>> =
+                    ImageBuffer::from_raw(frame.width, frame.height, frame.data);
+                if image.is_some() {
+                    let image_dest = root_path.join(format!("{}", ts)).join("frame_aux.jpg");
+                    let image = image.unwrap();
+
+                    let start = Instant::now();
+                    image.save(image_dest)?;
+                    let duration = start.elapsed();
+                    println!("Time elapsed in expensive_function() is: {:?}", duration);
+                }
+                break;
+            }
+            if pts > *ts {
+                break;
+            }
+        }
+        if frame_iter.peek().is_none() {
+            break;
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]
