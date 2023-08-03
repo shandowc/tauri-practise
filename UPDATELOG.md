@@ -1,3 +1,9 @@
+## v0.0.10
+
+### Features
+
+- extract frames from video.
+
 ## v0.0.9
 
 ### Bug Fixes
