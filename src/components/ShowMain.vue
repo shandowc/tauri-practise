@@ -1,4 +1,7 @@
 <template>
+    <el-alert v-if="!load_done" type="info">
+        <p>video is loading, loaded frames count: {{ load_frame_cnt }}</p>
+    </el-alert>
     <el-slider v-model="curFrameIdx" :max="frameTotalCnt" show-input class="m1"/>
     <Screen :msg="currentFrame" @previous="previous" @next="next" @refresh="refresh" />
 </template>
@@ -10,6 +13,15 @@ import Screen from '../components/Screen.vue';
 import { onKeyStroke } from '@vueuse/core';
 import { invoke } from "@tauri-apps/api/tauri";
 import { throttle } from '../utils/utils';
+import { appWindow } from '@tauri-apps/api/window';
+
+let load_done = ref(true);
+let load_frame_cnt = ref(0);
+
+appWindow.listen("video_progress", (event) => {
+    load_frame_cnt.value = (event.payload as any).frame_cnt || 0;
+    load_done.value = !!(event.payload as any)?.done;
+});
 
 const curFrameIdx = ref(0);
 const frameTotalCnt = ref(parseInt(sessionStorage.getItem("frame_cnt") || '1') - 1);

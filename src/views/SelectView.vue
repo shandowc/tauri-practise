@@ -21,14 +21,14 @@
             </el-input>
             <div>
                 <el-checkbox v-model="showVideoInput" label="输入辅助视频" size="large" />
-                <el-checkbox v-model="forceVideoReprocess" label="强制视频抽帧" size="large" />
+                <el-checkbox v-model="forceVideoReprocess" v-if="showVideoInput" label="强制视频抽帧" size="large" />
             </div>
         </div>
     </div>
 </template>
   
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router'
 import { ElLoading } from 'element-plus'
 import { ElMessage } from 'element-plus'
@@ -44,6 +44,10 @@ const videoPath = ref(getLastVideoPath());
 const loadingText = ref('Loading');
 const showVideoInput = ref(false);
 const forceVideoReprocess = ref(false);
+
+onMounted(async () => {
+    await invoke("quit_ffmpeg_process", {});
+})
 
 async function openDirectoryDialog() {
     const selected = await open({
@@ -72,7 +76,7 @@ function openFolder() {
     })
     const toload: any= {
         rootDir: input1.value,
-        auxVideoForce: true,
+        auxVideoForce: forceVideoReprocess.value,
     };
     if (showVideoInput.value) {
         toload.auxVideo = videoPath.value;

@@ -36,9 +36,10 @@ fn main() {
 
     tauri::Builder::default()
         .setup(|app| {
+            let handle = app.handle();
             let (tx, rx): (Sender<background::Request>, Receiver<Request>) =
                 sync::mpsc::channel();
-            thread::spawn(move || background::do_ffmpeg_background(rx));
+            thread::spawn(move || background::do_ffmpeg_background(handle, rx));
             let state = models::AppState(Arc::new(
                 Mutex::new(App{
                     root_dir: String::new(),
